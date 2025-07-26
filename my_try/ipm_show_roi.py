@@ -57,6 +57,9 @@ def run_ipm_video_test():
             print("视频播放结束。")
             break
 
+        # 新增：对原始帧进行水平镜像翻转，以校正摄像头问题
+        frame = cv2.flip(frame, 1)
+        
         # 1. 首先，对【整张原始图像】应用逆透视变换
         # 使用线性插值(INTER_LINEAR)以在Jetson上获得最佳性能
         ipm_frame = cv2.warpPerspective(frame, ipm_matrix, OUTPUT_SIZE, flags=cv2.INTER_LINEAR)

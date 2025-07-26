@@ -52,6 +52,9 @@ def run_ipm_video_test():
             print("视频播放结束。")
             break
 
+        # 新增：对原始帧进行水平镜像翻转，以校正摄像头问题
+        frame = cv2.flip(frame, 1)
+
         # 应用逆透视(鸟瞰图)变换
         ipm_frame = cv2.warpPerspective(frame, ipm_matrix, OUTPUT_SIZE, flags=cv2.INTER_LINEAR)
 

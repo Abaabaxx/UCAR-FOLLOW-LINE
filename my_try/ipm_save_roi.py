@@ -68,6 +68,9 @@ def create_ipm_video(input_path: str, output_path: str, forward_ipm_matrix: np.n
         ret, frame = cap.read()
         if not ret:
             break
+
+        # 新增：对原始帧进行水平镜像翻转，以校正摄像头问题
+        frame = cv2.flip(frame, 1)
             
         # 1. 对【整张】原始图像应用逆透视变换，生成【完整】的俯视图
         ipm_frame = cv2.warpPerspective(frame, forward_ipm_matrix, OUTPUT_SIZE, flags=cv2.INTER_LINEAR)
