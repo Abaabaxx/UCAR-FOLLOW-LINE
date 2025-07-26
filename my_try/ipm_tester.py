@@ -2,7 +2,6 @@ import cv2
 import numpy as np
 
 # 定义逆透视变换矩阵
-# 注意：这里使用的是示例矩阵，您需要替换为您实际的变换矩阵
 IPM_MATRIX = np.array([
     [1.2, 0.0, -100],
     [0.0, 1.2, -50],

@@ -7,9 +7,9 @@ import numpy as np
 # C代码中的变换矩阵
 # C代码中的变换矩阵 (使用测试矩阵1)
 C_CODE_MATRIX = np.array([
-    [-42.689601, 31.316015, 10088.624179],
-    [-0.409502, 22.081064, -3077.007244],
-    [-0.000118, 0.033758, -3.878394]
+    [-4.673979, 3.435034, -404.099493],
+    [-0.079294, 2.409743, -1531.527277],
+    [-0.000069, 0.010868, -6.019887]
 ], dtype=np.float64)
 
 # C代码中定义的目标俯视图(结果图)的尺寸 (宽度, 高度)
@@ -17,7 +17,7 @@ C_CODE_MATRIX = np.array([
 OUTPUT_SHAPE = (480, 640)  # (height, width)
 
 # 输入视频的路径 (请确保视频文件与此脚本在同一目录下, 或提供完整路径)
-VIDEO_PATH = '/home/lby/CURSOR/follow_line/follow_line_mp4/line_left_2.mp4' 
+VIDEO_PATH = '/home/lby/CURSOR/follow_line/follow_line_mp4/line_left_1.mp4' 
 
 # --- 2. 核心功能函数 (模拟C代码逻辑) ---
 
