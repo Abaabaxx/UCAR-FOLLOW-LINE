@@ -3,8 +3,8 @@ import cv2
 # 该脚本用于提取.mp4中一帧图像，然后使用这个图像进行标定，然后使用这个图像进行逆透视变换
 
 # --- 您需要修改的参数 ---
-VIDEO_PATH = '/home/lby/CURSOR/follow_line/follow_line_mp4/high/bd_high.mp4'  # 您的视频文件路径
-OUTPUT_IMAGE_NAME = '/home/lby/CURSOR/follow_line/my_try/image/bd_high.png'  # 保存的图片文件名 可以写保存的路径
+VIDEO_PATH = '/home/lby/CURSOR/follow_line/follow_line_mp4/low/low_bd.mp4'  # 您的视频文件路径
+OUTPUT_IMAGE_NAME = '/home/lby/CURSOR/follow_line/my_try/image/low_bd.png'  # 保存的图片文件名 可以写保存的路径
 # --- 修改结束 ---
 
 # 读取视频
