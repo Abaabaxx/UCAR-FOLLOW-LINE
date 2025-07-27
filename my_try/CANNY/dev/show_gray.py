@@ -4,6 +4,8 @@ import numpy as np
 # --- 参数配置区 ---
 # 输入视频的路径 (请确保视频文件与此脚本在同一目录下, 或提供完整路径)
 VIDEO_PATH = '/home/lby/CURSOR/follow_line/my_try/视频和图片/拉窗帘原始视频（平视）/最后录制.mp4'
+# 图像翻转参数
+PERFORM_HORIZONTAL_FLIP = True  # 是否执行水平翻转
 
 def process_video():
     """
@@ -30,6 +32,10 @@ def process_video():
         if not ret:
             print("视频播放结束。")
             break
+            
+        # 执行水平翻转（如果启用）
+        if PERFORM_HORIZONTAL_FLIP:
+            frame = cv2.flip(frame, 1)
         
         # 将原始帧转换为灰度图
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)

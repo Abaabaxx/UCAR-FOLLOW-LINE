@@ -8,7 +8,9 @@ VIDEO_PATH = '/home/lby/CURSOR/follow_line/my_try/视频和图片/拉窗帘原�
 GAUSSIAN_KERNEL_SIZE = (5, 5)  # 高斯核大小
 GAUSSIAN_SIGMA_X = 0  # 标准差，0表示根据核大小自动计算
 # 自适应Canny边缘检测参数
-ADAPTIVE_CANNY_SIGMA = 0.1  # 控制阈值相对于中位数的浮动范围
+ADAPTIVE_CANNY_SIGMA = 0.33  # 控制阈值相对于中位数的浮动范围
+# 图像翻转参数
+PERFORM_HORIZONTAL_FLIP = True  # 是否执行水平翻转
 
 def process_video():
     """
@@ -35,6 +37,10 @@ def process_video():
         if not ret:
             print("视频播放结束。")
             break
+            
+        # 执行水平翻转（如果启用）
+        if PERFORM_HORIZONTAL_FLIP:
+            frame = cv2.flip(frame, 1)
         
         # 将原始帧转换为灰度图
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
