@@ -27,6 +27,16 @@ IPM_ROI_H = 240  # ROI高度
 IPM_ROI_X = 0    # ROI起始X坐标
 IPM_ROI_W = 640  # ROI宽度
 
+# --- 可视化开关 ---
+# 设置为 True 来显示对应的处理阶段窗口，设置为 False 来隐藏
+SHOW_ORIGINAL = False
+SHOW_GRAYSCALE = False
+SHOW_GAUSSIAN = False
+SHOW_CANNY = False
+SHOW_IPM_RAW = False        # 显示原始的、未经形态学处理的鸟瞰图
+SHOW_IPM_MORPHED = False     # 显示经过形态学处理后的完整鸟瞰图
+SHOW_FINAL_ROI = True       # 显示最终用于分析的ROI区域
+
 def process_video():
     """
     加载视频，将每一帧转换为灰度图，并同时显示原始帧和灰度帧
@@ -85,13 +95,20 @@ def process_video():
         final_roi_frame = morphed_full_ipm[IPM_ROI_Y:IPM_ROI_Y + IPM_ROI_H, IPM_ROI_X:IPM_ROI_X + IPM_ROI_W]
         
         # 显示原始帧、灰度帧、高斯模糊后的帧、Canny边缘检测结果、原始鸟瞰图、形态学处理后的完整鸟瞰图和最终ROI
-        cv2.imshow('Original Frame', frame)
-        cv2.imshow('Grayscale Frame', gray_frame)
-        cv2.imshow('Gaussian Blurred Frame', blurred_frame)
-        cv2.imshow('Canny Edges', canny_edges)
-        cv2.imshow('IPM Bird-eye View', ipm_frame)
-        cv2.imshow('Morphed Full IPM', morphed_full_ipm)
-        cv2.imshow('Final ROI', final_roi_frame)
+        if SHOW_ORIGINAL:
+            cv2.imshow('Original Frame', frame)
+        if SHOW_GRAYSCALE:
+            cv2.imshow('Grayscale Frame', gray_frame)
+        if SHOW_GAUSSIAN:
+            cv2.imshow('Gaussian Blurred Frame', blurred_frame)
+        if SHOW_CANNY:
+            cv2.imshow('Canny Edges', canny_edges)
+        if SHOW_IPM_RAW:
+            cv2.imshow('IPM Bird-eye View', ipm_frame)
+        if SHOW_IPM_MORPHED:
+            cv2.imshow('Morphed Full IPM', morphed_full_ipm)
+        if SHOW_FINAL_ROI:
+            cv2.imshow('Final ROI', final_roi_frame)
         
         # 等待按键，'q'键用于退出
         if cv2.waitKey(delay) & 0xFF == ord('q'):
