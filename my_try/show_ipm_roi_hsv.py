@@ -20,7 +20,7 @@ IPM_ROI_X = 0
 IPM_ROI_W = 640
 
 # 输入视频的路径 (请确保视频文件与此脚本在同一目录下, 或提供完整路径)
-VIDEO_PATH = '/home/lby/CURSOR/follow_line/follow_line_mp4/high/high_2.mp4'
+VIDEO_PATH = '/home/lby/CURSOR/follow_line/my_try/视频和图片/拉窗帘原始视频（平视）/最后录制.mp4'
 
 # --- 2. 主程序区 (通常无需修改) ---
 

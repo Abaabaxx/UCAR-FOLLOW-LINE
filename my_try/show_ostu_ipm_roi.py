@@ -3,7 +3,7 @@ import numpy as np
 
 # --- 参数配置区 ---
 # 请将此路径修改为您准备的"黑白分明"测试视频的实际路径
-VIDEO_PATH = '/home/lby/CURSOR/follow_line/my_try/视频和图片/原始视频/平视/high_1.mp4'
+VIDEO_PATH = '/home/lby/CURSOR/follow_line/my_try/视频和图片/拉窗帘原始视频（平视）/最后录制.mp4'
 
 # 在这里粘贴您从【全图】标定中获得的3x3逆向变换矩阵
 INVERSE_IPM_MATRIX = np.array([
