@@ -49,7 +49,7 @@ def find_lane_pixels(binary_warped):
     rightx_base = np.argmax(histogram[midpoint:]) + midpoint
 
     # 设置滑动窗口的数量
-    nwindows = 9
+    nwindows = 20
     # 设置窗口的高度
     window_height = int(binary_warped.shape[0]//nwindows)
     # 识别图像中所有非零像素的x和y坐标
@@ -61,7 +61,7 @@ def find_lane_pixels(binary_warped):
     rightx_current = rightx_base
 
     # 设置窗口的宽度 +/- margin
-    margin = 100
+    margin = 50
     # 设置重新定位窗口的最小像素数
     minpix = 50
     # 创建空列表以接收左、右车道像素索引
