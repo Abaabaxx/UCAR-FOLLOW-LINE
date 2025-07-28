@@ -108,14 +108,17 @@ def process_video():
         if SHOW_IPM_MORPHED:
             cv2.imshow('Morphed Full IPM', morphed_full_ipm)
         if SHOW_FINAL_ROI:
+            # 对ROI区域进行二值化处理
+            _, binary_roi_frame = cv2.threshold(final_roi_frame, 5, 255, cv2.THRESH_BINARY)
+            
             # 为了在上面画图，我们先将ROI二值图转换为BGR彩色图
-            roi_display = cv2.cvtColor(final_roi_frame, cv2.COLOR_GRAY2BGR)
+            roi_display = cv2.cvtColor(binary_roi_frame, cv2.COLOR_GRAY2BGR)
 
             # 获取ROI的尺寸
-            roi_h, roi_w = final_roi_frame.shape[:2]
+            roi_h, roi_w = binary_roi_frame.shape[:2]
             
             # 定义扫描线的位置（从下往上数5个像素，增加鲁棒性）
-            start_row = roi_h - 5
+            start_row = roi_h - 10
             center_x = roi_w // 2
 
             # 初始化起始点坐标
@@ -124,13 +127,13 @@ def process_video():
 
             # 从中心向左扫描寻找左边线的起始点
             for x in range(center_x, -1, -1):
-                if final_roi_frame[start_row, x] == 255:
+                if binary_roi_frame[start_row, x] == 255:
                     left_start_point = (x, start_row)
                     break
             
             # 从中心向右扫描寻找右边线的起始点
             for x in range(center_x, roi_w):
-                if final_roi_frame[start_row, x] == 255:
+                if binary_roi_frame[start_row, x] == 255:
                     right_start_point = (x, start_row)
                     break
             
