@@ -3,7 +3,7 @@ import numpy as np
 
 # --- 参数配置区 ---
 # 输入视频的路径 (请确保视频文件与此脚本在同一目录下, 或提供完整路径)
-VIDEO_PATH = '/home/lby/CURSOR/follow_line/my_try/视频和图片/拉窗帘原始视频（平视）/最后录制.mp4'
+VIDEO_PATH = '/home/lby/CURSOR/follow_line/my_try/图像预处理/视频和图片/拉窗帘原始视频（平视）/最后录制.mp4'
 # 高斯模糊参数
 GAUSSIAN_KERNEL_SIZE = (5, 5)  # 高斯核大小
 GAUSSIAN_SIGMA_X = 0  # 标准差，0表示根据核大小自动计算

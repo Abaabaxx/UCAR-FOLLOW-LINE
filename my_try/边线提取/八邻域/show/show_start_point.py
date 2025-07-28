@@ -117,8 +117,8 @@ def process_video():
             # 获取ROI的尺寸
             roi_h, roi_w = binary_roi_frame.shape[:2]
             
-            # 定义扫描线的位置（从下往上数5个像素，增加鲁棒性）
-            start_row = roi_h - 10
+            # 定义扫描线的位置（从下往上数20个像素，增加鲁棒性）
+            start_row = roi_h - 20
             center_x = roi_w // 2
 
             # 初始化起始点坐标
