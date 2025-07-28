@@ -3,7 +3,7 @@ import numpy as np
 
 # --- 参数配置区 ---
 # 输入视频的路径 (请确保视频文件与此脚本在同一目录下, 或提供完整路径)
-VIDEO_PATH = '/home/lby/CURSOR/follow_line/my_try/视频和图片/拉窗帘原始视频（平视）/最后录制.mp4'
+VIDEO_PATH = '/home/lby/CURSOR/follow_line/my_try/图像预处理/视频和图片/拉窗帘原始视频（平视）/最后录制.mp4'
 # 高斯模糊参数
 GAUSSIAN_KERNEL_SIZE = (5, 5)  # 高斯核大小
 GAUSSIAN_SIGMA_X = 0  # 标准差，0表示根据核大小自动计算
@@ -108,7 +108,10 @@ def process_video():
         if SHOW_IPM_MORPHED:
             cv2.imshow('Morphed Full IPM', morphed_full_ipm)
         if SHOW_FINAL_ROI:
-            cv2.imshow('Final ROI', final_roi_frame)
+            # 对ROI区域进行最终的二值化处理，确保是纯黑白图像
+            # 灰度值大于5，就认为是白色
+            _, binary_roi_frame = cv2.threshold(final_roi_frame, 5, 255, cv2.THRESH_BINARY)
+            cv2.imshow('Final ROI', binary_roi_frame)
         
         # 等待按键，'q'键用于退出
         if cv2.waitKey(delay) & 0xFF == ord('q'):
