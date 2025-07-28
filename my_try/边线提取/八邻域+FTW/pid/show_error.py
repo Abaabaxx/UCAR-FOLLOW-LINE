@@ -21,6 +21,8 @@ PRINT_HZ = 4  # 打印error的频率（次/秒）
 CENTER_LINE_OFFSET = -55  # 从右边线向左偏移的像素数
 # Error滤波参数
 INPUT_FILTER_ALPHA = 0.6  # 滤波系数，值越大，滤波效果越弱
+# Error死区参数
+PID_DEADZONE = 3.0  # 死区范围（像素），在±3像素范围内的error将被视为0
 # 逆透视变换矩阵（从鸟瞰图坐标到原始图像坐标的映射）
 INVERSE_PERSPECTIVE_MATRIX = np.array([
     [-3.365493,  2.608984, -357.317062],
@@ -291,6 +293,10 @@ def process_video():
                         filtered_error = (1 - INPUT_FILTER_ALPHA) * filtered_error + INPUT_FILTER_ALPHA * raw_error
                         error = filtered_error  # 使用滤波后的error作为最终error
                         
+                        # 应用死区
+                        if abs(error) < PID_DEADZONE:
+                            error = 0.0
+                        
                         # 找到并绘制胡萝卜点
                         if final_right_border[anchor_y] != -1:
                             carrot_x = final_right_border[anchor_y] + CENTER_LINE_OFFSET
@@ -299,10 +305,10 @@ def process_video():
                                 cv2.drawMarker(roi_display, (carrot_x, anchor_y), 
                                              (0, 255, 0), cv2.MARKER_CROSS, 20, 2)
                     
-                        # 按指定频率打印raw_error和filtered_error
+                        # 按指定频率打印raw_error和最终error
                         current_time = time.time()
                         if current_time - last_print_time >= print_interval:
-                            print(f"Raw: {raw_error:7.2f} | Filtered: {error:7.2f}")
+                            print(f"Raw: {raw_error:7.2f} | Final Error: {error:7.2f}")
                             last_print_time = current_time
             
             cv2.imshow('Final ROI', roi_display)
