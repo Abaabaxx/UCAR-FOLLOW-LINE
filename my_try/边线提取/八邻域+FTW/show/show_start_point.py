@@ -12,6 +12,8 @@ CANNY_LOW_THRESHOLD = 50
 CANNY_HIGH_THRESHOLD = 150
 # 图像翻转参数
 PERFORM_HORIZONTAL_FLIP = True  # 是否执行水平翻转
+# 起始点寻找参数
+START_POINT_SCAN_STEP = 10  # 向上扫描的步长（像素）
 # 逆透视变换矩阵（从鸟瞰图坐标到原始图像坐标的映射）
 INVERSE_PERSPECTIVE_MATRIX = np.array([
     [-3.365493,  2.608984, -357.317062],
@@ -117,33 +119,28 @@ def process_video():
             # 获取ROI的尺寸
             roi_h, roi_w = binary_roi_frame.shape[:2]
             
-            # 定义扫描线的位置（从下往上数20个像素，增加鲁棒性）
-            start_row = roi_h - 20
+            # 初始化中心点和起始点坐标
             center_x = roi_w // 2
-
-            # 初始化起始点坐标
-            left_start_point = None
             right_start_point = None
+            current_scan_y = None  # 用于记录最终找到的扫描线位置
 
-            # 从中心向左扫描寻找左边线的起始点
-            for x in range(center_x, -1, -1):
-                if binary_roi_frame[start_row, x] == 255:
-                    left_start_point = (x, start_row)
-                    break
-            
-            # 从中心向右扫描寻找右边线的起始点
-            for x in range(center_x, roi_w):
-                if binary_roi_frame[start_row, x] == 255:
-                    right_start_point = (x, start_row)
+            # 从底部开始，每隔START_POINT_SCAN_STEP个像素向上扫描，寻找右边线起始点
+            for y in range(roi_h - 1, 0, -START_POINT_SCAN_STEP):
+                # 从中心向右扫描寻找右边线的内侧起始点
+                for x in range(center_x, roi_w - 1):
+                    if binary_roi_frame[y, x] == 0 and binary_roi_frame[y, x + 1] == 255:
+                        right_start_point = (x + 1, y)
+                        current_scan_y = y
+                        break
+                
+                # 如果找到了起始点，就停止向上扫描
+                if right_start_point is not None:
                     break
             
             # 可视化：画出扫描线和找到的起始点
-            # 画一条蓝色的线表示我们从哪里开始扫描
-            cv2.line(roi_display, (0, start_row), (roi_w, start_row), (255, 0, 0), 1)
-            
-            if left_start_point:
-                # 在左起始点画一个绿色的圆
-                cv2.circle(roi_display, left_start_point, 5, (0, 255, 0), -1)
+            if current_scan_y is not None:
+                # 画一条蓝色的线表示我们从哪里找到了起始点
+                cv2.line(roi_display, (0, current_scan_y), (roi_w, current_scan_y), (255, 0, 0), 1)
             
             if right_start_point:
                 # 在右起始点画一个红色的圆
