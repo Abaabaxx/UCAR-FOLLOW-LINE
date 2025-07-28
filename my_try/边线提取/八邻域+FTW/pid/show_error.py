@@ -19,6 +19,8 @@ LOOKAHEAD_DISTANCE = 80  # 胡萝卜点与基准点的距离（像素）
 PRINT_HZ = 4  # 打印error的频率（次/秒）
 # 路径规划参数
 CENTER_LINE_OFFSET = -55  # 从右边线向左偏移的像素数
+# Error滤波参数
+INPUT_FILTER_ALPHA = 0.6  # 滤波系数，值越大，滤波效果越弱
 # 逆透视变换矩阵（从鸟瞰图坐标到原始图像坐标的映射）
 INVERSE_PERSPECTIVE_MATRIX = np.array([
     [-3.365493,  2.608984, -357.317062],
@@ -147,6 +149,9 @@ def process_video():
     import time
     last_print_time = time.time()
     print_interval = 1.0 / PRINT_HZ
+
+    # 初始化滤波状态变量
+    filtered_error = 0.0
 
     # 计算正向透视变换矩阵（从原始图像坐标到鸟瞰图坐标的映射）
     try:
@@ -280,10 +285,13 @@ def process_video():
                     error = 0.0
                     if roi_points:
                         avg_x = sum(p[0] for p in roi_points) / len(roi_points)
-                        error = avg_x - (roi_w // 2)
+                        raw_error = avg_x - (roi_w // 2)
+                        
+                        # 应用指数移动平均滤波
+                        filtered_error = (1 - INPUT_FILTER_ALPHA) * filtered_error + INPUT_FILTER_ALPHA * raw_error
+                        error = filtered_error  # 使用滤波后的error作为最终error
                         
                         # 找到并绘制胡萝卜点
-                        # 在final_right_border中找到最接近anchor_y的点
                         if final_right_border[anchor_y] != -1:
                             carrot_x = final_right_border[anchor_y] + CENTER_LINE_OFFSET
                             if 0 <= carrot_x < roi_w:
@@ -291,11 +299,11 @@ def process_video():
                                 cv2.drawMarker(roi_display, (carrot_x, anchor_y), 
                                              (0, 255, 0), cv2.MARKER_CROSS, 20, 2)
                     
-                    # 按指定频率打印error
-                    current_time = time.time()
-                    if current_time - last_print_time >= print_interval:
-                        print(f"Error: {error:.2f} pixels")
-                        last_print_time = current_time
+                        # 按指定频率打印raw_error和filtered_error
+                        current_time = time.time()
+                        if current_time - last_print_time >= print_interval:
+                            print(f"Raw: {raw_error:7.2f} | Filtered: {error:7.2f}")
+                            last_print_time = current_time
             
             cv2.imshow('Final ROI', roi_display)
         

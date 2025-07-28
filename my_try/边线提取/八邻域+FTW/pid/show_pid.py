@@ -18,6 +18,8 @@ START_POINT_SCAN_STEP = 10  # 向上扫描的步长（像素）
 LOOKAHEAD_DISTANCE = 80  # 胡萝卜点与基准点的距离（像素）
 PRINT_HZ = 4  # 打印error的频率（次/秒）
 # 路径规划参数
+# 100pix约等于40cm
+# 1pix=0.4cm
 CENTER_LINE_OFFSET = -55  # 从右边线向左偏移的像素数
 # PID控制器参数
 Kp = 1  # 比例系数
