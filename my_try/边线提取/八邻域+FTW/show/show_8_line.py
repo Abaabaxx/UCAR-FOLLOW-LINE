@@ -41,9 +41,10 @@ SHOW_IPM_RAW = False        # 显示原始的、未经形态学处理的鸟瞰�
 SHOW_IPM_MORPHED = False     # 显示经过形态学处理后的完整鸟瞰图
 SHOW_FINAL_ROI = True       # 显示最终用于分析的ROI区域
 
-# 定义邻域搜索模式
-# 顺时针方向，用于从左起始点开始，沿赛道外侧（黑色区域）向内寻找左边界
-SEEDS_L = [
+# 定义沿墙走的搜索模式（Follow The Wall）
+# 顺时针方向搜索，用于沿着右侧赛道内边界行走
+# 这个顺序确保了我们的"机器人"能够正确地沿着赛道的内侧边界前进
+FTW_SEEDS = [
     (-1, 0),    # 左
     (-1, -1),   # 左上
     (0, -1),    # 上
@@ -54,26 +55,13 @@ SEEDS_L = [
     (-1, 1)     # 左下
 ]
 
-# 逆时针方向，用于从右起始点开始，沿赛道外侧（黑色区域）向内寻找右边界
-SEEDS_R = [
-    (1, 0),     # 右
-    (1, -1),    # 右上
-    (0, -1),    # 上
-    (-1, -1),   # 左上
-    (-1, 0),    # 左
-    (-1, 1),    # 左下
-    (0, 1),     # 下
-    (1, 1)      # 右下
-]
-
-def trace_boundary(image, start_point, seeds):
+def follow_the_wall(image, start_point):
     """
-    使用八邻域爬线算法跟踪边界
+    使用沿墙走(Follow The Wall)算法跟踪右侧边界
     
     参数:
     image: 二值图像
     start_point: 起始点坐标 (x, y)
-    seeds: 邻域搜索模式列表
     
     返回:
     boundary_points: 边界点列表
@@ -94,12 +82,12 @@ def trace_boundary(image, start_point, seeds):
         # 遍历8个方向，使用索引以便获取下一个方向
         for i in range(8):
             # 获取当前邻居点A的坐标
-            dx_a, dy_a = seeds[i]
+            dx_a, dy_a = FTW_SEEDS[i]
             A_x = current_point[0] + dx_a
             A_y = current_point[1] + dy_a
             
             # 获取下一个邻居点B的坐标（使用循环索引）
-            dx_b, dy_b = seeds[(i + 1) % 8]
+            dx_b, dy_b = FTW_SEEDS[(i + 1) % 8]
             B_x = current_point[0] + dx_b
             B_y = current_point[1] + dy_b
             
@@ -255,8 +243,8 @@ def process_video():
                 # 在右起始点画一个红色的圆
                 cv2.circle(roi_display, right_start_point, 5, (0, 0, 255), -1)
                 
-                # 使用八邻域爬线算法寻找右边界，注意这里使用了SEEDS_L（交换了爬线算法）
-                right_points = trace_boundary(binary_roi_frame, right_start_point, SEEDS_L)
+                # 使用沿墙走算法寻找右边界
+                right_points = follow_the_wall(binary_roi_frame, right_start_point)
                 
                 # 提取最终的右边线
                 final_right_border = None
