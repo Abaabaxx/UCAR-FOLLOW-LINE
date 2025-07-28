@@ -117,6 +117,33 @@ def trace_boundary(image, start_point, seeds):
     
     return boundary_points
 
+def extract_final_border(image_height, raw_points):
+    """
+    从原始轮廓点集中提取每行一个点的最终边线
+    
+    参数:
+    image_height: ROI图像的高度
+    raw_points: 原始轮廓点列表 [(x1,y1), (x2,y2), ...]
+    
+    返回:
+    final_border: 长度为image_height的数组，每个元素是该行边线的x坐标，-1表示该行没有边线
+    """
+    # 初始化最终边线数组，所有值设为-1表示未找到边线
+    final_border = np.full(image_height, -1, dtype=int)
+    # 用于记录已处理的行
+    found_rows = set()
+    
+    # 按照原始顺序遍历轮廓点
+    for x, y in raw_points:
+        # 如果这一行还没有记录过边线点
+        if y not in found_rows:
+            # 记录这一行的x坐标
+            final_border[y] = x
+            # 标记这一行已处理
+            found_rows.add(y)
+    
+    return final_border
+
 def process_video():
     """
     加载视频，将每一帧转换为灰度图，并同时显示原始帧和灰度帧
@@ -221,23 +248,38 @@ def process_video():
             # 画一条蓝色的线表示我们从哪里开始扫描
             cv2.line(roi_display, (0, start_row), (roi_w, start_row), (255, 0, 0), 1)
             
+            # 初始化最终边线数组
+            final_left_border = None
+            final_right_border = None
+            
             if left_start_point:
                 # 在左起始点画一个绿色的圆
                 cv2.circle(roi_display, left_start_point, 5, (0, 255, 0), -1)
                 # 使用八邻域爬线算法寻找左边界，注意这里使用了SEEDS_R（交换了爬线算法）
                 left_points = trace_boundary(binary_roi_frame, left_start_point, SEEDS_R)
-                # 可视化左边界点
-                for point in left_points:
-                    cv2.circle(roi_display, point, 2, (255, 0, 0), -1)  # 蓝色点
+                # 提取最终的左边线
+                if left_points:
+                    final_left_border = extract_final_border(roi_h, left_points)
             
             if right_start_point:
                 # 在右起始点画一个红色的圆
                 cv2.circle(roi_display, right_start_point, 5, (0, 0, 255), -1)
                 # 使用八邻域爬线算法寻找右边界，注意这里使用了SEEDS_L（交换了爬线算法）
                 right_points = trace_boundary(binary_roi_frame, right_start_point, SEEDS_L)
-                # 可视化右边界点
-                for point in right_points:
-                    cv2.circle(roi_display, point, 2, (0, 255, 255), -1)  # 黄色点
+                # 提取最终的右边线
+                if right_points:
+                    final_right_border = extract_final_border(roi_h, right_points)
+            
+            # 可视化最终的边线点
+            if final_left_border is not None:
+                for y, x in enumerate(final_left_border):
+                    if x != -1:  # 如果这一行有边线点
+                        cv2.circle(roi_display, (x, y), 2, (0, 255, 0), -1)  # 亮绿色
+            
+            if final_right_border is not None:
+                for y, x in enumerate(final_right_border):
+                    if x != -1:  # 如果这一行有边线点
+                        cv2.circle(roi_display, (x, y), 2, (255, 192, 203), -1)  # 粉色
             
             cv2.imshow('Final ROI', roi_display)
         
