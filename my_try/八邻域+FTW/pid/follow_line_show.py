@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import cv2
 import numpy as np
 import rospy
@@ -6,7 +8,16 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge, CvBridgeError
 from std_srvs.srv import SetBool, SetBoolResponse
 import time
+'''
+可视化
+rqt_image_view /line_follower/debug_image
 
+启动巡线算法
+rosservice call /follow_line/run "data: true"
+
+停止巡线算法
+rosservice call /follow_line/run "data: false"
+'''
 # --- 参数配置区 ---
 # ROS话题参数
 IMAGE_TOPIC = "/usb_cam/image_raw"
