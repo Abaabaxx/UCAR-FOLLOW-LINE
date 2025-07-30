@@ -525,7 +525,7 @@ class LineFollowerNode:
                     return
 
             # 状态执行逻辑
-            if not is_line_found:
+            if not is_line_found and self.current_state != ROTATE_ALIGNMENT:
                 self.stop()
             elif self.current_state == FOLLOW_LEFT or self.current_state == FOLLOW_LEFT_WITH_AVOIDANCE:
                 # PID巡线逻辑
