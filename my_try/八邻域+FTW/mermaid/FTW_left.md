@@ -5,6 +5,7 @@ stateDiagram-v2
     STRAIGHT_TRANSITION: 1-直行过渡
     ROTATE_ALIGNMENT: 2-原地转向对准
     FOLLOW_LEFT_WITH_AVOIDANCE: 3-带避障巡线
+    AVOIDANCE_MANEUVER: 4-执行避障机动
 
     %% 定义初始状态
     [*] --> FOLLOW_LEFT: 节点初始化
@@ -13,7 +14,8 @@ stateDiagram-v2
     FOLLOW_LEFT --> STRAIGHT_TRANSITION: <b>首次</b>检测到特殊区域\n(连续3帧边线Y坐标 < ROI高度-50)
     STRAIGHT_TRANSITION --> ROTATE_ALIGNMENT: 到达过渡区终点\n(边线Y坐标 > ROI高度-30)
     ROTATE_ALIGNMENT --> FOLLOW_LEFT_WITH_AVOIDANCE: 转向对准完成\n(像素误差绝对值 < 15)
-    FOLLOW_LEFT_WITH_AVOIDANCE --> FOLLOW_LEFT_WITH_AVOIDANCE: 持续执行
+    FOLLOW_LEFT_WITH_AVOIDANCE --> AVOIDANCE_MANEUVER: 检测到障碍物
+    AVOIDANCE_MANEUVER --> FOLLOW_LEFT_WITH_AVOIDANCE: 完成三步机动
 
     %% 沿墙巡线状态说明
     note right of FOLLOW_LEFT
@@ -42,8 +44,17 @@ stateDiagram-v2
         <b>状态行为:</b>
         - 完成一次重对准循环后的最终状态
         - <b>永久锁定在此状态</b>
-        - <b>优先行为:</b> 检测到障碍物则停止
+        - <b>优先行为:</b> 检测到障碍物则<b>进入避障机动</b>
         - <b>默认行为:</b> PID巡线
+    end note
+
+    %% 执行避障机动状态说明
+    note left of AVOIDANCE_MANEUVER
+        <b>状态行为:</b>
+        - 依次执行闭环控制的动作序列:
+        - 1. 向左平移50cm
+        - 2. 向前直行50cm
+        - 3. 向右平移50cm
     end note
 
     %% 全局控制说明
