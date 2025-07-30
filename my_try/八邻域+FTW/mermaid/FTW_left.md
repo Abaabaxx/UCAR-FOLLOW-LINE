@@ -4,23 +4,25 @@ stateDiagram-v2
     FOLLOW_LEFT: 0-沿左墙巡线
     STRAIGHT_TRANSITION: 1-直行过渡
     ROTATE_ALIGNMENT: 2-原地转向对准
-    
+    FOLLOW_LEFT_WITH_AVOIDANCE: 3-带避障巡线
+
     %% 定义初始状态
     [*] --> FOLLOW_LEFT: 节点初始化
 
     %% 状态转换
     FOLLOW_LEFT --> STRAIGHT_TRANSITION: <b>首次</b>检测到特殊区域\n(连续3帧边线Y坐标 < ROI高度-50)
     STRAIGHT_TRANSITION --> ROTATE_ALIGNMENT: 到达过渡区终点\n(边线Y坐标 > ROI高度-30)
-    ROTATE_ALIGNMENT --> FOLLOW_LEFT: 转向对准完成\n(像素误差绝对值 < 15)
-    
+    ROTATE_ALIGNMENT --> FOLLOW_LEFT_WITH_AVOIDANCE: 转向对准完成\n(像素误差绝对值 < 15)
+    FOLLOW_LEFT_WITH_AVOIDANCE --> FOLLOW_LEFT_WITH_AVOIDANCE: 持续执行
+
     %% 沿墙巡线状态说明
     note right of FOLLOW_LEFT
         <b>状态行为:</b>
-        - PID控制沿墙巡线
+        - 初始PID巡线状态
         - (误差大时旋转，误差小时前进)
-        - <b>在'原地转向对准'完成后，<br/>将永久锁定在此状态。</b>
+        - <b>仅在整个流程开始时执行一次。</b>
     end note
-    
+
     %% 直行过渡状态说明
     note right of STRAIGHT_TRANSITION
         <b>状态行为:</b>
@@ -33,6 +35,15 @@ stateDiagram-v2
         - 线速度为0
         - <b>执行固定向左旋转 (7°/s)</b>
         - 持续计算误差，直到满足退出条件
+    end note
+
+    %% 带避障巡线状态说明
+    note right of FOLLOW_LEFT_WITH_AVOIDANCE
+        <b>状态行为:</b>
+        - 完成一次重对准循环后的最终状态
+        - <b>永久锁定在此状态</b>
+        - 基础行为是PID巡线
+        - <b>(未来将在此集成避障逻辑)</b>
     end note
 
     %% 全局控制说明
