@@ -38,13 +38,14 @@ CANNY_HIGH_THRESHOLD = 150
 PERFORM_HORIZONTAL_FLIP = True  # 是否执行水平翻转
 # 起始点寻找参数
 START_POINT_SCAN_STEP = 10  # 向上扫描的步长（像素）
+HORIZONTAL_SEARCH_OFFSET = -20 # 水平搜索起始点的偏移量(相对于中心, 负为左, 正为右)
 # 胡萝卜点参数
 LOOKAHEAD_DISTANCE = 10  # 胡萝卜点与基准点的距离（像素）
 PRINT_HZ = 4  # 打印error的频率（次/秒）
 # 路径规划参数
 CENTER_LINE_OFFSET = -47  # 从右边线向左偏移的像素数
 # PID控制器参数
-Kp = 0.6  # 比例系数
+Kp = 0.3  # 比例系数
 Ki = 0.0   # 积分系数
 Kd = 0.1   # 微分系数
 # 速度控制参数
@@ -54,7 +55,7 @@ STEERING_TO_ANGULAR_VEL_RATIO = 0.02  # 转向角到角速度的转换系数
 MAX_ANGULAR_SPEED_DEG = 15.0  # 最大角速度（度/秒）
 # 原地转向对准状态参数
 ROTATE_ALIGNMENT_SPEED_DEG = -7.0 # 固定的原地右转角速度 (度/秒, 负值为右转)
-ROTATE_ALIGNMENT_ERROR_THRESHOLD = 5 # 退出转向状态的像素误差阈值
+ROTATE_ALIGNMENT_ERROR_THRESHOLD = 15 # 退出转向状态的像素误差阈值
 # 逆透视变换矩阵（从鸟瞰图坐标到原始图像坐标的映射）
 INVERSE_PERSPECTIVE_MATRIX = np.array([
     [-3.365493,  2.608984, -357.317062],
@@ -265,14 +266,14 @@ class LineFollowerNode:
         roi_h, roi_w = binary_roi_frame.shape[:2]
         
         # 初始化中心点和起始点坐标
-        center_x = roi_w // 2
+        start_search_x = (roi_w // 2) + HORIZONTAL_SEARCH_OFFSET
         start_point = None
         current_scan_y = None
 
         # 从底部开始，每隔START_POINT_SCAN_STEP个像素向上扫描，寻找右边线起始点
         for y in range(roi_h - 1, 0, -START_POINT_SCAN_STEP):
             # 从中心向右扫描寻找右边线的内侧起始点
-            for x in range(center_x, roi_w - 1):
+            for x in range(start_search_x, roi_w - 1):
                 if binary_roi_frame[y, x] == 0 and binary_roi_frame[y, x + 1] == 255:
                     start_point = (x + 1, y)
                     current_scan_y = y
@@ -410,7 +411,7 @@ class LineFollowerNode:
                 self.cmd_vel_pub.publish(twist_msg)
 
                 # 2. 检查状态转换条件（右侧边线是否靠近底部）
-                transition_y_threshold = roi_h - 20
+                transition_y_threshold = roi_h - 30
                 if start_point[1] > transition_y_threshold:
                     rospy.loginfo("直行完成，刹车并准备转向...")
                     self.stop() # <--- 新增刹车指令
