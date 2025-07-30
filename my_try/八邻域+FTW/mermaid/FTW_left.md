@@ -13,7 +13,7 @@ stateDiagram-v2
     %% 状态转换
     FOLLOW_LEFT --> STRAIGHT_TRANSITION: <b>首次</b>检测到特殊区域\n(连续3帧边线Y坐标 < ROI高度-50)
     STRAIGHT_TRANSITION --> ROTATE_ALIGNMENT: 到达过渡区终点\n(边线Y坐标 > ROI高度-30)
-    ROTATE_ALIGNMENT --> FOLLOW_LEFT_WITH_AVOIDANCE: 转向对准完成\n(像素误差绝对值 < 15)
+    ROTATE_ALIGNMENT --> FOLLOW_LEFT_WITH_AVOIDANCE: 雷达确认前方有垂直板子
     FOLLOW_LEFT_WITH_AVOIDANCE --> AVOIDANCE_MANEUVER: 检测到障碍物
     AVOIDANCE_MANEUVER --> FOLLOW_LEFT_WITH_AVOIDANCE: 完成三步机动
 
@@ -36,7 +36,7 @@ stateDiagram-v2
         <b>状态行为:</b>
         - 线速度为0
         - <b>执行固定向左旋转 (7°/s)</b>
-        - 持续计算误差，直到满足退出条件
+        - 持续旋转，直到雷达满足退出条件
     end note
 
     %% 带避障巡线状态说明
@@ -53,7 +53,7 @@ stateDiagram-v2
         <b>状态行为:</b>
         - 依次执行闭环控制的动作序列:
         - 1. 向左平移50cm
-        - 2. 向前直行50cm
+        - 2. 向前直行58cm
         - 3. 向右平移50cm
     end note
 
@@ -61,7 +61,7 @@ stateDiagram-v2
     note left of FOLLOW_LEFT
         <b>全局控制:</b>
         - 随时可通过服务调用停止
-        - 未找到边线时临时停止
+        - 巡线时未找到边线则旋转搜索
         - 激光雷达始终在后台监控
     end note
 ```
