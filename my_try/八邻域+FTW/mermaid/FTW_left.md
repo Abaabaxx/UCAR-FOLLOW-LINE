@@ -6,7 +6,9 @@ stateDiagram-v2
     ROTATE_ALIGNMENT: 2-原地转向对准
     FOLLOW_LEFT_WITH_AVOIDANCE: 3-带避障巡线
     AVOIDANCE_MANEUVER: 4-执行避障机动
-
+    FOLLOW_TO_FINISH: 5-最终冲刺巡线
+    FINAL_STOP: 6-任务结束
+    
     %% 定义初始状态
     [*] --> FOLLOW_LEFT: 节点初始化
 
@@ -15,8 +17,9 @@ stateDiagram-v2
     STRAIGHT_TRANSITION --> ROTATE_ALIGNMENT: 到达过渡区终点\n(边线Y坐标 > ROI高度-30)
     ROTATE_ALIGNMENT --> FOLLOW_LEFT_WITH_AVOIDANCE: 雷达确认前方有垂直板子
     FOLLOW_LEFT_WITH_AVOIDANCE --> AVOIDANCE_MANEUVER: 检测到障碍物
-    AVOIDANCE_MANEUVER --> FOLLOW_LEFT_WITH_AVOIDANCE: 完成三步机动
-
+    AVOIDANCE_MANEUVER --> FOLLOW_TO_FINISH: 完成三步避障机动
+    FOLLOW_TO_FINISH --> FINAL_STOP: 满足停车条件
+    
     %% 沿墙巡线状态说明
     note right of FOLLOW_LEFT
         <b>状态行为:</b>
@@ -24,7 +27,7 @@ stateDiagram-v2
         - (误差大时旋转，误差小时前进)
         - <b>仅在整个流程开始时执行一次。</b>
     end note
-
+    
     %% 直行过渡状态说明
     note right of STRAIGHT_TRANSITION
         <b>状态行为:</b>
@@ -55,6 +58,23 @@ stateDiagram-v2
         - 1. 向左平移50cm
         - 2. 向前直行58cm
         - 3. 向右平移50cm
+    end note
+
+    %% 最终冲刺巡线状态说明
+    note right of FOLLOW_TO_FINISH
+        <b>状态行为:</b>
+        - 避障完成后的最终巡线阶段
+        - 基础行为: PID巡线
+        - <b>持续检查停车条件</b>
+        - 一旦满足停车条件，立即停止
+    end note
+
+    %% 最终停止状态说明
+    note right of FINAL_STOP
+        <b>状态行为:</b>
+        - 任务完成的终点状态
+        - 停止所有动作
+        - <b>不再转换到其他状态</b>
     end note
 
     %% 全局控制说明
