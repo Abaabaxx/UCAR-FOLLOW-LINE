@@ -4,7 +4,7 @@ stateDiagram-v2
     FOLLOW_LEFT: 0-沿左墙巡线
     STRAIGHT_TRANSITION: 1-直行过渡
     ROTATE_ALIGNMENT: 2-原地转向对准
-    FOLLOW_LEFT_WITH_AVOIDANCE: 3-带避障巡线
+    LIDAR_CRUISE: 3-雷达锁板巡航(带避障)
     AVOIDANCE_MANEUVER: 4-执行避障机动
     FOLLOW_TO_FINISH: 5-最终冲刺巡线
     FINAL_STOP: 6-任务结束
@@ -15,8 +15,8 @@ stateDiagram-v2
     %% 状态转换
     FOLLOW_LEFT --> STRAIGHT_TRANSITION: <b>首次</b>检测到特殊区域\n(连续3帧边线Y坐标 < ROI高度-50)
     STRAIGHT_TRANSITION --> ROTATE_ALIGNMENT: 到达过渡区终点\n(边线Y坐标 > ROI高度-30)
-    ROTATE_ALIGNMENT --> FOLLOW_LEFT_WITH_AVOIDANCE: 雷达确认前方有垂直板子
-    FOLLOW_LEFT_WITH_AVOIDANCE --> AVOIDANCE_MANEUVER: 检测到障碍物
+    ROTATE_ALIGNMENT --> LIDAR_CRUISE: 雷达确认前方有垂直板子
+    LIDAR_CRUISE --> AVOIDANCE_MANEUVER: 检测到近距离障碍物
     AVOIDANCE_MANEUVER --> FOLLOW_TO_FINISH: 完成三步避障机动
     FOLLOW_TO_FINISH --> FINAL_STOP: 满足停车条件
     
@@ -42,13 +42,15 @@ stateDiagram-v2
         - 持续旋转，直到雷达满足退出条件
     end note
 
-    %% 带避障巡线状态说明
-    note right of FOLLOW_LEFT_WITH_AVOIDANCE
+    %% 雷达锁板巡航状态说明
+    note right of LIDAR_CRUISE
         <b>状态行为:</b>
-        - 完成一次重对准循环后的最终状态
-        - <b>永久锁定在此状态</b>
-        - <b>优先行为:</b> 检测到障碍物则<b>进入避障机动</b>
-        - <b>默认行为:</b> PID巡线
+        - 导航基准: <b>侧方的板子</b>
+        - <b>决策优先级 (每帧执行):</b>
+        - 1. <b>[角度修正]</b> 角度误差 > 10° ? -> 停止并旋转(7°/s)
+        - 2. <b>[位置修正]</b> 横向误差 > 5cm ? -> 停止并平移(0.08m/s)
+        - 3. <b>[默认直行]</b> 误差均在容差内 -> 前进(0.1m/s)
+        - <b>最高优先级:</b> 检测到障碍物则<b>立即进入避障机动</b>
     end note
 
     %% 执行避障机动状态说明
