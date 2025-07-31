@@ -29,7 +29,7 @@ rosservice call /follow_line/run "data: false"
 FOLLOW_LEFT = 0          # 状态一：沿左墙巡线
 STRAIGHT_TRANSITION = 1   # 状态二：直行过渡
 ROTATE_ALIGNMENT = 2      # 状态三：原地转向对准
-LIDAR_CRUISE = 3 # 状态四：雷达锁板巡航(带避障)
+FOLLOW_LEFT_WITH_AVOIDANCE = 3 # 状态四：带避障巡线
 AVOIDANCE_MANEUVER = 4    # 状态五：执行避障机动
 FOLLOW_TO_FINISH = 5     # 状态六：最终冲刺巡线
 FINAL_STOP = 6           # 状态七：任务结束并停止
@@ -39,7 +39,7 @@ STATE_NAMES = {
     FOLLOW_LEFT: "FOLLOW_LEFT",
     STRAIGHT_TRANSITION: "STRAIGHT_TRANSITION",
     ROTATE_ALIGNMENT: "ROTATE_ALIGNMENT",
-    LIDAR_CRUISE: "LIDAR_CRUISE",
+    FOLLOW_LEFT_WITH_AVOIDANCE: "FOLLOW_LEFT_WITH_AVOIDANCE",
     AVOIDANCE_MANEUVER: "AVOIDANCE_MANEUVER",
     FOLLOW_TO_FINISH: "FOLLOW_TO_FINISH",
     FINAL_STOP: "FINAL_STOP"
@@ -79,13 +79,13 @@ ROTATE_ALIGNMENT_SPEED_DEG = 7.0 # 固定的原地左转角速度 (度/秒, 正�
 ROTATE_ALIGNMENT_ERROR_THRESHOLD = 15 # 退出转向状态的像素误差阈值
 LINE_SEARCH_ROTATION_SPEED_DEG = 7.0 # 丢线后原地向左旋转搜索的速度 (度/秒)
 # 激光雷达板子垂直度检测参数 (用于ROTATE_ALIGNMENT状态)
-BOARD_DETECT_ANGLE_DEG = 90.0      # 扫描前方 +/- 这么多度
+BOARD_DETECT_ANGLE_DEG = 50.0      # 扫描前方 +/- 这么多度
 BOARD_DETECT_MIN_DIST_M = 0.26      # 考虑的最小距离
-BOARD_DETECT_MAX_DIST_M = 0.9      # 考虑的最大距离
+BOARD_DETECT_MAX_DIST_M = 2      # 考虑的最大距离
 BOARD_DETECT_CLUSTER_TOL_M = 0.05  # 聚类时，点与点之间的最大距离
 BOARD_DETECT_MIN_CLUSTER_PTS = 5   # 一个有效聚类最少的点数
 BOARD_DETECT_MIN_LENGTH_M = 0.36    # 聚成的线段最小长度
-BOARD_DETECT_MAX_LENGTH_M = 0.66    # 聚成的线段最大长度
+BOARD_DETECT_MAX_LENGTH_M = 0.62    # 聚成的线段最大长度
 BOARD_DETECT_ANGLE_TOL_DEG = 12.0  # 与水平线的最大角度容忍度(越小越垂直)
 # 激光雷达避障参数
 LIDAR_TOPIC = "/scan"                                  # 激光雷达话题名称
@@ -98,13 +98,6 @@ AVOIDANCE_STRAFE_DISTANCE_M = 0.5                      # 避障-平移距离 (�
 AVOIDANCE_FORWARD_DISTANCE_M = 0.58                     # 避障-前进距离 (米)
 AVOIDANCE_STRAFE_SPEED_MPS = 0.15                       # 避障-平移速度 (米/秒)
 AVOIDANCE_FORWARD_SPEED_MPS = 0.15                      # 避障-前进速度 (米/秒)
-# 雷达锁板巡航(LIDAR_CRUISE)状态参数
-LIDAR_CRUISE_FORWARD_SPEED_MPS = 0.1   # 直行速度 (m/s)
-LIDAR_CRUISE_STRAFE_SPEED_MPS = 0.08  # 平移速度 (m/s)
-LIDAR_CRUISE_ANGULAR_SPEED_DEG = 7.0   # 旋转速度 (度/秒)
-LIDAR_CRUISE_ANGLE_TOL_DEG = 10.0      # 角度容忍度/死区 (度)
-LIDAR_CRUISE_LATERAL_TOL_M = 0.05      # 横向误差容忍度/死区 (米)
-LIDAR_CRUISE_LOST_TARGET_THRESH_FRAMES = 15 # 连续丢失目标的容忍帧数 (15帧 @ 30Hz ≈ 0.5秒)
 # 逆透视变换矩阵（从鸟瞰图坐标到原始图像坐标的映射）
 INVERSE_PERSPECTIVE_MATRIX = np.array([
     [-3.365493,  2.608984, -357.317062],
@@ -241,9 +234,7 @@ class LineFollowerNode:
         self.latest_debug_image = np.zeros((IPM_ROI_H, IPM_ROI_W, 3), dtype=np.uint8)
         
         # 初始化板子检测相关状态变量
-        self.board_detected_info = (False, 0.0, 0.0) # (是否找到, 角度误差deg, 横向误差m)
-        self.board_lost_frames = 0                         # 连续丢失板子目标的帧数计数器
-        self.last_known_board_info = (False, 0.0, 0.0)     # 缓存上一次成功检测到的板子信息
+        self.is_board_perpendicular = False # 标记是否检测到垂直板子
         
         # 初始化cv_bridge
         self.bridge = CvBridge()
@@ -268,9 +259,6 @@ class LineFollowerNode:
         
         # 将丢线搜索角速度从度转换为弧度
         self.line_search_rotation_speed_rad = np.deg2rad(LINE_SEARCH_ROTATION_SPEED_DEG)
-        
-        # 将雷达锁板巡航角速度从度转换为弧度
-        self.lidar_cruise_angular_speed_rad = np.deg2rad(LIDAR_CRUISE_ANGULAR_SPEED_DEG)
         
         # 计算正向透视变换矩阵
         try:
@@ -435,7 +423,7 @@ class LineFollowerNode:
         检测激光雷达前方是否存在垂直的板子。
         借鉴find_board.py的聚类和拟合思想，但简化为轻量级实时检测。
         
-        返回: tuple (bool, float, float) - (是否检测到垂直板子, 角度误差deg, 横向误差m)
+        返回: bool - 是否检测到垂直板子
         """
         try:
             # 初始化调试MarkerArray
@@ -469,7 +457,7 @@ class LineFollowerNode:
             
             if len(points) < BOARD_DETECT_MIN_CLUSTER_PTS:
                 self.debug_markers_pub.publish(debug_marker_array)
-                return (False, 0.0, 0.0)
+                return False
             
             # 2. 简单距离聚类
             clusters = []
@@ -675,15 +663,15 @@ class LineFollowerNode:
                     rospy.loginfo_throttle(2, "检测到垂直板子: 中心点(x=%.2f, y=%.2f)m, 长度=%.2fm, 角度偏差=%.1f度", 
                                          center_x_m, lateral_error_m, length, angle_from_vertical)
                     self.debug_markers_pub.publish(debug_marker_array)
-                    return (True, angle_from_vertical, lateral_error_m)
+                    return True
             
             self.debug_markers_pub.publish(debug_marker_array)
-            return (False, 0.0, 0.0)
+            return False
             
         except Exception as e:
             rospy.logwarn_throttle(5, "板子检测出错: %s", str(e))
             self.debug_markers_pub.publish(debug_marker_array)
-            return (False, 0.0, 0.0)
+            return False
 
     def scan_callback(self, msg):
         """
@@ -718,13 +706,13 @@ class LineFollowerNode:
             
             # 4. 更新板子垂直度检测标志
             with self.data_lock:
-                self.board_detected_info = self._check_for_perpendicular_board(msg)
+                self.is_board_perpendicular = self._check_for_perpendicular_board(msg)
 
         except Exception as e:
             rospy.logwarn_throttle(1.0, "scan_callback中发生错误: %s", str(e))
             self.obstacle_detected = False
             with self.data_lock:
-                self.board_detected_info = (False, 0.0, 0.0)
+                self.is_board_perpendicular = False
 
     def odom_callback(self, msg):
         """
@@ -974,9 +962,9 @@ class LineFollowerNode:
                     return
             
             elif self.current_state == ROTATE_ALIGNMENT:
-                # 雷达条件：从 self.board_detected_info 读取
+                # 雷达条件：从 self.is_board_perpendicular 读取
                 with self.data_lock:
-                    lidar_condition_met = self.board_detected_info[0]
+                    lidar_condition_met = self.is_board_perpendicular
 
                 rospy.loginfo_throttle(1, "状态: ROTATE_ALIGNMENT | 等待雷达确认垂直: %s",
                                      str(lidar_condition_met))
@@ -985,13 +973,13 @@ class LineFollowerNode:
                 if lidar_condition_met:
                     rospy.loginfo("状态转换: 雷达确认垂直，转向完成。")
                     self.realign_cycle_completed = True
-                    self.current_state = LIDAR_CRUISE
+                    self.current_state = FOLLOW_LEFT_WITH_AVOIDANCE
                     self.stop()
                     return
             
-            elif self.current_state == LIDAR_CRUISE:
+            elif self.current_state == FOLLOW_LEFT_WITH_AVOIDANCE:
                 if obstacle_detected:
-                    rospy.loginfo("状态转换: LIDAR_CRUISE -> AVOIDANCE_MANEUVER")
+                    rospy.loginfo("状态转换: FOLLOW_LEFT_WITH_AVOIDANCE -> AVOIDANCE_MANEUVER")
                     self.stop()
                     self.current_state = AVOIDANCE_MANEUVER
                     self.maneuver_step = 0
@@ -1015,7 +1003,7 @@ class LineFollowerNode:
                     return
 
             # 状态执行逻辑 - 首先，根据当前状态确定默认的twist_msg (假设总能找到线)
-            if self.current_state == FOLLOW_LEFT or self.current_state == FOLLOW_TO_FINISH:
+            if self.current_state == FOLLOW_LEFT or self.current_state == FOLLOW_LEFT_WITH_AVOIDANCE or self.current_state == FOLLOW_TO_FINISH:
                 # PID巡线逻辑
                 if is_line_found:
                     self._execute_line_following_logic_in_main_loop(vision_error, twist_msg)
@@ -1030,64 +1018,6 @@ class LineFollowerNode:
                 twist_msg.linear.x = 0.0
                 twist_msg.angular.z = self.rotate_alignment_speed_rad
             
-            elif self.current_state == LIDAR_CRUISE:
-                # 雷达锁板巡航逻辑：带容错帧的状态记忆控制
-                with self.data_lock:
-                    is_board_found, angle_error_deg, lateral_error_m = self.board_detected_info
-
-                # 决策要使用的板子信息（当前帧或缓存）
-                active_board_info = None
-
-                if is_board_found:
-                    # 如果当前帧找到了，重置计数器，更新缓存
-                    self.board_lost_frames = 0
-                    self.last_known_board_info = (is_board_found, angle_error_deg, lateral_error_m)
-                    active_board_info = self.last_known_board_info
-                else:
-                    # 如果当前帧没找到，增加计数器
-                    self.board_lost_frames += 1
-                    rospy.logwarn_throttle(0.2, "状态: LIDAR_CRUISE | 目标暂时丢失(%d/%d帧)，使用缓存数据...", 
-                                         self.board_lost_frames, LIDAR_CRUISE_LOST_TARGET_THRESH_FRAMES)
-                    
-                    # 检查是否超过容忍阈值
-                    if self.board_lost_frames <= LIDAR_CRUISE_LOST_TARGET_THRESH_FRAMES:
-                        # 未超时，使用上一次的有效数据继续执行
-                        active_board_info = self.last_known_board_info
-                    else:
-                        # 已超时，目标被认为真正丢失，停止所有动作
-                        rospy.logwarn_throttle(1, "状态: LIDAR_CRUISE | 警告: 连续丢失板子目标超过阈值，停止所有动作")
-                        # active_board_info 保持为 None
-
-                # 根据最终确定的active_board_info来执行动作
-                if active_board_info and active_board_info[0]:
-                    _, active_angle_error, active_lateral_error = active_board_info
-                    
-                    # 第一优先级：角度修正
-                    if abs(active_angle_error) > LIDAR_CRUISE_ANGLE_TOL_DEG:
-                        twist_msg.linear.x = 0.0
-                        twist_msg.linear.y = 0.0
-                        twist_msg.angular.z = self.lidar_cruise_angular_speed_rad if active_angle_error > 0 else -self.lidar_cruise_angular_speed_rad
-                        rospy.loginfo_throttle(1, "状态: LIDAR_CRUISE | 角度修正: %.1f度", active_angle_error)
-                    # 第二优先级：横向位置修正 (已修复方向)
-                    elif abs(active_lateral_error) > LIDAR_CRUISE_LATERAL_TOL_M:
-                        twist_msg.linear.x = 0.0
-                        twist_msg.angular.z = 0.0
-                        # 横向误差(板子y坐标)为正表示板子在左侧，需向左平移(y速度为正)
-                        twist_msg.linear.y = LIDAR_CRUISE_STRAFE_SPEED_MPS if active_lateral_error > 0 else -LIDAR_CRUISE_STRAFE_SPEED_MPS
-                        rospy.loginfo_throttle(1, "状态: LIDAR_CRUISE | 横向修正: %.2fm", active_lateral_error)
-                    # 默认：直行
-                    else:
-                        twist_msg.linear.x = LIDAR_CRUISE_FORWARD_SPEED_MPS
-                        twist_msg.linear.y = 0.0
-                        twist_msg.angular.z = 0.0
-                        rospy.loginfo_throttle(2, "状态: LIDAR_CRUISE | 直行中，角度误差: %.1f度, 横向误差: %.2fm", 
-                                             active_angle_error, active_lateral_error)
-                else:
-                    # 如果 active_board_info 为 None 或无效，则停车
-                    twist_msg.linear.x = 0.0
-                    twist_msg.linear.y = 0.0
-                    twist_msg.angular.z = 0.0
-            
             elif self.current_state == FINAL_STOP:
                 twist_msg.linear.x = 0.0
                 twist_msg.angular.z = 0.0
@@ -1095,7 +1025,7 @@ class LineFollowerNode:
             # 然后，作为最后一步，检查是否丢失了线，并覆盖上面的指令
             if not is_line_found:
                 # 只有在需要巡线的状态下才旋转搜索
-                if self.current_state in [FOLLOW_LEFT, FOLLOW_TO_FINISH, STRAIGHT_TRANSITION]:
+                if self.current_state in [FOLLOW_LEFT, FOLLOW_LEFT_WITH_AVOIDANCE, FOLLOW_TO_FINISH, STRAIGHT_TRANSITION]:
                     rospy.loginfo_throttle(1, "状态: %s | 丢线，开始原地旋转搜索...", STATE_NAMES[self.current_state])
                     twist_msg.linear.x = 0.0
                     twist_msg.angular.z = self.line_search_rotation_speed_rad
