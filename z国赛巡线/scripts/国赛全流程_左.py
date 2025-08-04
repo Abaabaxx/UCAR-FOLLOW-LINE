@@ -162,7 +162,7 @@ ALIGN_OBSERVATION_ANGLE_TOL_DEG = 20.0  # 与入口板平行时的观察角度�
 # 状态三: ADJUST_LATERAL_POSITION (与右侧板保持距离)
 # ==============================================================================
 # --- 行为参数 ---
-ADJUST_TARGET_LATERAL_DIST_M = 2      # 与右侧板的目标横向距离 (米)
+ADJUST_TARGET_LATERAL_DIST_M = 1.94      # 与右侧板的目标横向距离 (米)
 ADJUST_LATERAL_SPEED_M_S = 0.1          # 横向平移速度 (米/秒)
 ADJUST_LATERAL_POS_TOL_M = 0.03         # 横向位置容差 (米)
 

@@ -77,7 +77,7 @@ CENTER_LINE_OFFSET = -52  # 从右边线向左偏移的像素数
 # 速度控制参数
 LINEAR_SPEED = 0.1  # 前进速度 (m/s)
 ERROR_DEADZONE_PIXELS = 15  # 误差死区（像素），低于此值则认为方向正确
-LINE_FOLLOWING_ANGULAR_SPEED_DEG = 7.0 # 巡线时的固定转向角速度 (度/秒)
+LINE_FOLLOWING_ANGULAR_SPEED_DEG = 10.0 # 巡线时的固定转向角速度 (度/秒)
 
 # 逆透视变换矩阵（从鸟瞰图坐标到原始图像坐标的映射）
 INVERSE_PERSPECTIVE_MATRIX = np.array([
@@ -148,7 +148,7 @@ FTW_SEEDS_RIGHT = [
 # 状态二: ALIGN_WITH_ENTRANCE_BOARD (与左侧入口板平行)
 # ==============================================================================
 # --- 行为参数 ---
-ALIGNMENT_ROTATION_SPEED_DEG = 7.0      # 旋转对齐时的角速度 (度/秒)
+ALIGNMENT_ROTATION_SPEED_DEG = 10.0      # 旋转对齐时的角速度 (度/秒)
 
 # --- 检测参数 ---
 ALIGN_TARGET_ANGLE_DEG = 90.0           # 扫描中心: 左侧 (90度)
@@ -194,7 +194,7 @@ DRIVE_TO_CENTER_MAX_DIST_M = 1.5          # 最大检测距离
 DRIVE_TO_CENTER_MIN_LENGTH_M = 0.4        # 短板最小长度 (米)
 DRIVE_TO_CENTER_MAX_LENGTH_M = 0.6        # 短板最大长度 (米)
 DRIVE_TO_CENTER_CORRECTION_ANGLE_TOL_DEG = 4.0  # 直行到中心时的姿态修正角度容忍度 (度)
-DRIVE_TO_CENTER_OBSERVATION_ANGLE_TOL_DEG = 20.0  # 直行到中心时的观察角度容忍度 (度)
+DRIVE_TO_CENTER_OBSERVATION_ANGLE_TOL_DEG = 35.0  # 直行到中心时的观察角度容忍度 (度)
 
 # ==============================================================================
 # 状态五: DRIVE_IN_CIRCLE (环岛)
